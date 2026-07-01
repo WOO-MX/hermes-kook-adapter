@@ -60,9 +60,33 @@ gateway:
 
 ## 安装
 
+### 一键安装
+
 ```bash
-pip install aiohttp httpx
-hermes plugins enable kook
+curl -fsSL https://raw.githubusercontent.com/WOO-MX/hermes-kook-adapter/main/install.sh | bash
+```
+
+脚本自动完成：下载源码 → 安装依赖 → 部署插件 → 检查配置。
+
+### 手动安装
+
+```bash
+git clone https://github.com/WOO-MX/hermes-kook-adapter.git
+cd hermes-kook-adapter
+./install.sh
+```
+
+如果 `hermes` CLI 不在 PATH 中，可通过环境变量指定路径：
+
+```bash
+HERMES_HOME=/opt/data ./install.sh
+```
+
+安装后配置 `KOOK_TOKEN` 并重启网关：
+
+```bash
+echo 'KOOK_TOKEN=Bot_xxxxxxxx' >> ~/.hermes/.env
+hermes gateway restart
 ```
 
 ## 许可证
