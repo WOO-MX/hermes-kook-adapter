@@ -92,6 +92,16 @@ gateway:
 hermes gateway restart
 ```
 
+## 重要提醒：独立 Agent 与权限隔离
+
+KOOK 适配器**不应与其他平台共用同一个 Hermes Agent**。建议在 Agent 配置中为 KOOK 频道单独创建一个 Agent 实例：
+
+- **独立人格** — KOOK 频道有独特的社区文化和交流风格，共享 Agent 会导致回复水土不服，甚至泄露其他平台的上下文信息。
+- **权限隔离** — Agent 配置中的 [tools] / [resources] / [policy] 需按 KOOK 频道需求单独划定，避免群成员通过聊天间接触达不该访问的内部工具或数据。
+- **安全边界** — `allowed_users` 白名单只管"谁能对话"，不管"Agent 能做什么"。权限由 Agent 自身的 policy 和 tool access 决定，务必在 Agent 层面收紧。
+
+简单说：**一台 Agent = 一个平台，不要复用**。在 Hermes 配置文件里给 `kook` 平台单独绑一个 Agent ID。
+
 ## 配置参考
 
 | 配置项 | 类型 | 说明 |
