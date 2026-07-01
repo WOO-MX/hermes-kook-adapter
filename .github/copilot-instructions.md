@@ -2,8 +2,8 @@
 
 ## Build, test, and lint
 
-There is no test framework, linter config, or build step in this repository. The project is a single-file
-plugin deployed by copying files into the Hermes plugin directory.
+There is no test framework, linter config, or build step in this repository. The project is a
+single-file plugin deployed by copying three files into `~/.hermes/plugins/platforms/kook/`.
 
 Install dependencies:
 
@@ -11,7 +11,14 @@ Install dependencies:
 pip install aiohttp httpx
 ```
 
-To deploy, run `install.sh` (or use the one-liner: `curl -fsSL https://raw.githubusercontent.com/WOO-MX/hermes-kook-adapter/main/install.sh | bash`).
+Deploy to Hermes:
+
+```bash
+mkdir -p ~/.hermes/plugins/platforms/kook
+cp adapter.py __init__.py plugin.yaml ~/.hermes/plugins/platforms/kook/
+```
+
+Then configure via `~/.hermes/.env` or `~/.hermes/config.yaml` and restart: `hermes gateway restart`.
 
 ## Architecture
 
