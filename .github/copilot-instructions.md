@@ -3,7 +3,7 @@
 ## Build, test, and lint
 
 There is no test framework, linter config, or build step in this repository. The project is a
-single-file plugin deployed by copying three files into `~/.hermes/plugins/platforms/kook/`.
+single-file plugin deployed by copying all `.py` files and `plugin.yaml` into `~/.hermes/plugins/platforms/kook/`.
 
 Install dependencies:
 
@@ -15,7 +15,7 @@ Deploy to Hermes:
 
 ```bash
 mkdir -p ~/.hermes/plugins/platforms/kook
-cp adapter.py __init__.py plugin.yaml ~/.hermes/plugins/platforms/kook/
+cp adapter.py ws_handler.py messaging.py constants.py config_helpers.py standalone.py __init__.py plugin.yaml ~/.hermes/plugins/platforms/kook/
 ```
 
 Then configure via `~/.hermes/.env` or `~/.hermes/config.yaml` and restart: `hermes gateway restart`.
@@ -26,31 +26,29 @@ This is a **plugin adapter** for the [Hermes Agent](https://github.com/WOO-MX/he
 It is **not** a standalone application — it runs as a dynamically loaded module inside the Hermes
 gateway process.
 
-**Core file:** `adapter.py` (~1042 lines) — the entire adapter in one file.
+**Core files:** The adapter is split across 6 Python modules (~236 + 442 + 285 + 85 + 85 + 72
+≈ 1205 lines total, well-factored):
 
 ```
-adapter.py
-├── Module-level helpers (check_requirements, validate_config, is_connected, _env_enablement)
-├── _standalone_send()         — REST-only sender for cron delivery (no live gateway needed)
-├── interactive_setup()         — CLI setup wizard invoked by `hermes platform setup`
-├── KookAdapter(BasePlatformAdapter) — the main adapter class
-│   ├── connect/disconnect      — WebSocket lifecycle
-│   ├── _listen_loop            — reads WS frames, dispatches via _handle_frame → _handle_event
-│   ├── _handle_event           — access control, @mention gate, builds MessageEvent → handle_message()
-│   ├── send/send_image/send_document/send_voice — REST API message delivery
-│   ├── _upload_asset           — file upload to KOOK CDN (POST /api/v3/asset/create)
-│   ├── _api_post/_api_get      — HTTP helpers wrapping httpx
-│   ├── _reconnect              — exponential backoff, max 5 attempts
-│   └── _cleanup                — close WS + HTTP clients
-└── register(ctx)               — Hermes plugin entry point (wires adapter into the gateway)
+adapter.py (236 lines)   — KookAdapter orchestrator + register() entry point
+ws_handler.py (442 lines)— KookWebSocketMixin: connect, listen loop, frame handling, reconnect, cleanup
+messaging.py (285 lines) — KookMessagingMixin: send/send_image/send_document/send_voice, upload, HTTP helpers
+standalone.py (85 lines) — _standalone_send, interactive_setup (no gateway process needed)
+constants.py (72 lines)  — KOOK API constants (message types, signal types, limits)
+config_helpers.py (85 lines)— Lazy imports, check_requirements, validate_config, _env_enablement
+```
+
+KookAdapter uses multiple inheritance to compose mixins:
+```python
+class KookAdapter(KookWebSocketMixin, KookMessagingMixin, BasePlatformAdapter):
 ```
 
 **Data flow:**
-1. KOOK WebSocket sends frame → `_listen_loop` → `_handle_frame` → `_handle_event`
+1. KOOK WebSocket sends frame → `KookWebSocketMixin._listen_loop` → `_handle_frame` → `_handle_event`
 2. `_handle_event` applies filters (self-message, dedup, access control, @mention gate)
 3. Builds a `MessageEvent` with `source` (chat_id, user_id, etc.) and dispatches to the Hermes agent
    via `self.handle_message(event)` (inherited from `BasePlatformAdapter`)
-4. The agent processes the message and calls `adapter.send(chat_id, response)` to reply
+4. The agent processes the message and calls `KookMessagingMixin.send(chat_id, response)` to reply
 
 ## Key conventions
 
@@ -85,15 +83,15 @@ must support both paths.**
 
 ### Lazy dependency imports
 
-Both `aiohttp` and `httpx` are imported at module top level, but availability is tracked via
+Both `aiohttp` and `httpx` are imported in `config_helpers.py` with availability tracked via
 `AIOHTTP_AVAILABLE` / `HTTPX_AVAILABLE` flags. The `check_requirements()` function gates
-loading. Do not import these unconditionally inside the adapter class — use the gate functions.
+loading. Do not import these unconditionally in other modules — import the flags from
+`config_helpers` instead.
 
 ### KOOK API constants
 
-All KOOK-specific magic numbers (message types, signal types, limits) are defined as module-level
-constants (e.g., `MSG_TYPE_KMARKDOWN = 9`, `SIGNAL_PING = 2`). Always reference these constants,
-never inline the numbers.
+All KOOK-specific magic numbers (message types, signal types, limits) are defined in
+`constants.py`. Always reference these constants, never inline the numbers.
 
 ### HTTP helpers
 
