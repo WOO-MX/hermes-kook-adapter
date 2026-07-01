@@ -1,0 +1,32 @@
+name: kook-platform
+label: KOOK
+kind: platform
+version: 1.0.0
+description: >
+  KOOK (开黑啦) messaging platform adapter for Hermes Agent.
+  Connects to KOOK via WebSocket + REST API and relays messages
+  between KOOK channels/DMs and the Hermes agent.
+  Requires aiohttp and httpx.
+author: Hermes Agent User
+requires_env:
+  - name: KOOK_TOKEN
+    description: "KOOK Bot Token (from https://developer.kookapp.cn/app/index)"
+    prompt: "KOOK Bot Token"
+    password: true
+optional_env:
+  - name: KOOK_HOME_CHANNEL
+    description: "Default KOOK channel ID for cron delivery"
+    prompt: "Home channel ID"
+    password: false
+  - name: KOOK_ALLOWED_USERS
+    description: "Comma-separated KOOK user IDs allowed to interact"
+    prompt: "Allowed user IDs (comma-separated)"
+    password: false
+  - name: KOOK_ALLOW_ALL_USERS
+    description: "Allow any KOOK user to talk to the bot"
+    prompt: "Allow all users? (true/false)"
+    password: false
+  - name: KOOK_PROXY
+    description: "Proxy URL for KOOK API (SOCKS5/HTTP)"
+    prompt: "Proxy URL (optional)"
+    password: false
