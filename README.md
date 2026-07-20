@@ -31,26 +31,19 @@ pip install aiohttp-socks
 
 ### 2. 部署插件文件
 
-把所有 .py 文件和 plugin.yaml 复制到 Hermes 的插件目录下：
-
-```
-~/.hermes/plugins/platforms/kook/
-├── adapter.py
-├── ws_handler.py
-├── messaging.py
-├── standalone.py
-├── constants.py
-├── config_helpers.py
-├── __init__.py
-└── plugin.yaml
-```
+推荐用仓库里的 `install.sh` 一键安装（支持自动安装依赖、识别 `HERMES_HOME`）：
 
 ```bash
-# 克隆仓库
 git clone https://github.com/WOO-MX/hermes-kook-adapter.git
 cd hermes-kook-adapter
+./install.sh                # 安装依赖 + 复制文件
+./install.sh --with-socks   # 同时安装 aiohttp-socks
+./install.sh --skip-deps    # 只复制文件，不安装依赖
+```
 
-# 创建目标目录并复制文件
+手动复制的话，把所有 `.py` 文件和 `plugin.yaml` 放到 Hermes 的插件目录下：
+
+```bash
 mkdir -p ~/.hermes/plugins/platforms/kook
 cp *.py plugin.yaml ~/.hermes/plugins/platforms/kook/
 ```
