@@ -66,7 +66,7 @@ class KookMessagingMixin:
         """Send an image via KOOK REST API by URL."""
         try:
             if image_url.startswith(("http://", "https://")):
-                if "kookapp.cn" in image_url or "img.kookapp.cn" in image_url:
+                if "kookapp.cn" in image_url:
                     return await self._send_cdn_image(chat_id, image_url)
                 else:
                     cached_path = await cache_image_from_url(image_url)

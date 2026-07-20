@@ -66,4 +66,7 @@ def _env_enablement() -> Optional[dict]:
     allow_all = os.getenv("KOOK_ALLOW_ALL_USERS", "").strip().lower()
     if allow_all in ("1", "true", "yes"):
         extra["allow_all_users"] = True
+    channel_prompt = os.getenv("KOOK_CHANNEL_PROMPT", "").strip()
+    if channel_prompt:
+        extra["channel_prompt"] = channel_prompt
     return {"extra": extra, "home_channel": home_channel or None}

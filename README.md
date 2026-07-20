@@ -108,8 +108,9 @@ KOOK 适配器**不应与其他平台共用同一个 Hermes Agent**。建议在 
 |--------|------|------|
 | `token` / `KOOK_TOKEN` | string (**必填**) | KOOK Bot Token，格式 `Bot xxxxxxxx` |
 | `home_channel` / `KOOK_HOME_CHANNEL` | string | 默认频道 ID，cron 定时推送用 |
-| `allowed_users` / `KOOK_ALLOWED_USERS` | list / 逗号分隔 | 允许交互的用户白名单 |
+| `allowed_users` / `KOOK_ALLOWED_USERS` | list / 逗号分隔 | 允许交互的用户白名单（**为空 = 拒绝所有人**，除非开启 `allow_all_users`） |
 | `allow_all_users` / `KOOK_ALLOW_ALL_USERS` | bool / `"true"` | 开发模式，放行所有用户 |
+| `channel_prompt` / `KOOK_CHANNEL_PROMPT` | string | 注入每条消息的人格 prompt |
 | `KOOK_PROXY` | string | 代理地址（仅环境变量），支持 socks5/http |
 
 ## 许可证

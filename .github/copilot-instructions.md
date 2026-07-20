@@ -76,10 +76,14 @@ All settings can come from **either** environment variables **or** `config.yaml`
 | `KOOK_HOME_CHANNEL` | `extra.home_channel` |
 | `KOOK_ALLOWED_USERS` | `extra.allowed_users` |
 | `KOOK_ALLOW_ALL_USERS` | `extra.allow_all_users` |
+| `KOOK_CHANNEL_PROMPT` | `extra.channel_prompt` |
 | `KOOK_PROXY` | (env only, resolved via `resolve_proxy_url()`) |
 
 The `KookAdapter.__init__` reads both sources and merges them. **Every new config option
 must support both paths.**
+
+Note on access control: when `allow_all_users` is false, the author must be in
+`allowed_users` — an **empty allowlist denies everyone**.
 
 ### Lazy dependency imports
 

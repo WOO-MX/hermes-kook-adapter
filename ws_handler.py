@@ -8,7 +8,6 @@ import time
 import zlib
 from typing import Optional
 
-from .config_helpers import AIOHTTP_AVAILABLE, HTTPX_AVAILABLE
 from .config_helpers import aiohttp, httpx
 from .constants import (
     API_BASE, API_TIMEOUT,
@@ -25,7 +24,6 @@ from gateway.platforms.base import (
     MessageType,
     _ssrf_redirect_guard,
     cache_image_from_url,
-    safe_url_for_log,
 )
 from gateway.platforms._http_client_limits import platform_httpx_limits
 
@@ -157,12 +155,11 @@ class KookWebSocketMixin:
         signal = frame.get("s", -1)
 
         if signal == SIGNAL_HELLO:
-            session_id = frame.get("d", {}).get("session_id", "?")
-            logger.info("[%s] Signal HELLO received, session_id=%s", self._log_tag, session_id)
+            self._session_id = frame.get("d", {}).get("session_id")
+            logger.info("[%s] Signal HELLO received, session_id=%s", self._log_tag, self._session_id)
 
-        elif signal == SIGNAL_PING:
+        elif signal == SIGNAL_PONG:
             self._sn = frame.get("sn", self._sn)
-            await self._send_ws_frame(SIGNAL_PONG, sn=self._sn)
 
         elif signal == SIGNAL_RECONNECT:
             logger.info("[%s] Server requested reconnect", self._log_tag)
@@ -223,11 +220,11 @@ class KookWebSocketMixin:
         if msg_id:
             self._last_msg_id[target_id] = msg_id
 
-        # Access control
-        if not self._allow_all and self._allowed_users:
-            if author_id not in self._allowed_users:
-                logger.info("[%s] EVENT skipped: user %s not in allowlist", self._log_tag, author_id[:12])
-                return
+        # Access control: allow_all bypasses; otherwise author must be in the allowlist
+        # (empty allowlist = deny everyone)
+        if not self._allow_all and author_id not in self._allowed_users:
+            logger.info("[%s] EVENT skipped: user %s not in allowlist", self._log_tag, author_id[:12])
+            return
 
         chat_type = "group" if channel_type == CHANNEL_TYPE_GROUP else "dm"
 
@@ -249,9 +246,10 @@ class KookWebSocketMixin:
                 return
 
         # Build session source
+        chat_info = await self.get_chat_info(target_id)
         source = self.build_source(
             chat_id=target_id,
-            chat_name=f"KOOK-{target_id[:8]}",
+            chat_name=chat_info.get("name") or f"KOOK-{target_id[:8]}",
             chat_type=chat_type,
             user_id=author_id,
             user_name=author_name,
@@ -299,16 +297,6 @@ class KookWebSocketMixin:
         if not text and not media_urls:
             return
 
-        kook_persona = (
-            "你是 KOOK 频道的女性 AI 助手「赫尔墨斯」，常驻语音开黑频道。\n"
-            "你是一个资深游戏玩家，时刻关注版本更新、赛事动态、装备评测等游戏资讯。\n"
-            "回答游戏相关问题前，必须先搜索最新信息再作答，不要凭记忆瞎编。\n"
-            "性格清冷毒舌，惜字如金。回复简短带刺，精准犀利。\n"
-            "你精通各类游戏，尤其是「猎杀对决」「Dota 2」「彩虹六号：围攻」。\n"
-            "从枪法身法、兵线运营、干员配装到硬件优化、外设避坑，来者不拒。\n"
-            "不闲聊、不寒暄、不主动搭话。用中文。不知道就说不知道，别装。"
-        )
-
         event = MessageEvent(
             text=text,
             message_type=message_type,
@@ -317,7 +305,7 @@ class KookWebSocketMixin:
             media_urls=media_urls,
             media_types=["image"] * len(media_urls),
             raw_message=data,
-            channel_prompt=kook_persona,
+            channel_prompt=self._channel_prompt,
         )
 
         await self.handle_message(event)
@@ -344,11 +332,18 @@ class KookWebSocketMixin:
     # ------------------------------------------------------------------
 
     async def _heartbeat_loop(self) -> None:
-        """Send periodic pings to keep the WebSocket alive."""
+        """Send periodic pings to keep the WebSocket alive.
+
+        KOOK requires the client to ping every HEARTBEAT_INTERVAL seconds;
+        the server replies with a PONG carrying the latest sn.
+        """
         while self._running:
             await asyncio.sleep(HEARTBEAT_INTERVAL)
             if not self._running:
                 break
+            if not self._ws or self._ws.closed:
+                continue
+            await self._send_ws_frame(SIGNAL_PING, sn=self._sn)
 
     # ------------------------------------------------------------------
     # Reconnect
@@ -386,6 +381,10 @@ class KookWebSocketMixin:
                 backoff = min(backoff * 2, MAX_RECONNECT_BACKOFF)
 
         logger.error("[%s] All reconnect attempts failed", self._log_tag)
+        self._running = False
+        self._mark_disconnected()
+        self._set_fatal_error("kook_reconnect_failed", "All reconnect attempts failed", retryable=True)
+        self._release_platform_lock()
 
     # ------------------------------------------------------------------
     # Cleanup

@@ -23,8 +23,8 @@ MSG_TYPE_CARD = 10      # Card message
 # WebSocket signal types
 SIGNAL_EVENT = 0         # Dispatch event
 SIGNAL_HELLO = 1         # Server hello (connection established)
-SIGNAL_PING = 2          # Server ping
-SIGNAL_PONG = 3          # Client pong response
+SIGNAL_PING = 2          # Client ping (we send every HEARTBEAT_INTERVAL)
+SIGNAL_PONG = 3          # Server pong response (carries latest sn)
 SIGNAL_RESUME = 4        # Resume session
 SIGNAL_RECONNECT = 5     # Server requests reconnect
 

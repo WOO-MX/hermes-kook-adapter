@@ -26,6 +26,10 @@ optional_env:
     description: "Allow any KOOK user to talk to the bot"
     prompt: "Allow all users? (true/false)"
     password: false
+  - name: KOOK_CHANNEL_PROMPT
+    description: "Persona prompt injected into every KOOK message"
+    prompt: "Channel persona prompt (optional)"
+    password: false
   - name: KOOK_PROXY
     description: "Proxy URL for KOOK API (SOCKS5/HTTP)"
     prompt: "Proxy URL (optional)"

@@ -3,7 +3,7 @@
 import os
 import logging
 
-from .constants import API_BASE, API_TIMEOUT, MSG_TYPE_KMARKDOWN
+from .constants import API_BASE, API_TIMEOUT, MSG_TYPE_KMARKDOWN, TOKEN_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,11 @@ async def _standalone_send(chat_id: str, content: str, extra: dict) -> dict:
     if not HTTPX_AVAILABLE:
         return {"error": "httpx not installed"}
 
-    token = extra.get("token") or os.getenv("KOOK_TOKEN", "")
+    token = (extra.get("token") or os.getenv("KOOK_TOKEN", "")).strip()
     if not token:
         return {"error": "KOOK_TOKEN not configured"}
+    if not token.startswith(f"{TOKEN_PREFIX} "):
+        token = f"{TOKEN_PREFIX} {token}"
 
     plain = strip_markdown(content)
     url = f"{API_BASE}/message/create"
@@ -28,7 +30,7 @@ async def _standalone_send(chat_id: str, content: str, extra: dict) -> dict:
         "content": plain,
     }
     headers = {
-        "Authorization": f"Bot {token}",
+        "Authorization": token,
         "Content-Type": "application/json",
     }
 
@@ -63,7 +65,7 @@ async def interactive_setup(ctx) -> bool:
         return False
 
     home_channel = await prompt_fn("Home channel ID (optional, for cron delivery)")
-    allowed_users = await prompt_fn("Allowed user IDs, comma-separated (empty = allow all)")
+    allowed_users = await prompt_fn("Allowed user IDs, comma-separated (empty = deny all)")
 
     env_updates = {"KOOK_TOKEN": token}
     if home_channel:
@@ -74,7 +76,7 @@ async def interactive_setup(ctx) -> bool:
     ctx.write_env(env_updates)
     print()
     print("KOOK platform configured!")
-    print(f"  Token: {token[:15]}...{token[-4:]}")
+    print(f"  Token: ...{token[-4:]}")
     if home_channel:
         print(f"  Home channel: {home_channel}")
     return True

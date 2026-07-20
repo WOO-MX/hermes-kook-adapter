@@ -67,6 +67,10 @@ class KookAdapter(KookWebSocketMixin, KookMessagingMixin, BasePlatformAdapter):
             extra.get("home_channel") or os.getenv("KOOK_HOME_CHANNEL", "")
         ).strip() or None
 
+        self._channel_prompt = str(
+            extra.get("channel_prompt") or os.getenv("KOOK_CHANNEL_PROMPT", "")
+        ).strip() or None
+
         # Access control
         self._allow_all = bool(
             extra.get("allow_all_users")
