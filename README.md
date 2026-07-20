@@ -65,8 +65,9 @@ cp *.py plugin.yaml ~/.hermes/plugins/platforms/kook/
 # 编辑 ~/.hermes/.env，添加：
 KOOK_TOKEN=Bot_xxxxxxxxxxxxxxxx
 KOOK_HOME_CHANNEL=频道ID              # 可选，cron 投递目标
-KOOK_ALLOWED_USERS=用户ID1,用户ID2    # 可选，交互白名单
+KOOK_ALLOWED_USERS=用户ID1,用户ID2    # 可选，交互白名单（留空 = 拒绝所有人）
 KOOK_ALLOW_ALL_USERS=true             # 可选，开发模式放行所有用户
+KOOK_CHANNEL_PROMPT=你是...           # 可选，注入每条消息的人格 prompt
 KOOK_PROXY=socks5://127.0.0.1:1080    # 可选，代理
 ```
 
@@ -82,6 +83,7 @@ gateway:
         home_channel: "频道ID"
         allowed_users: ["用户ID1", "用户ID2"]
         allow_all_users: false
+        channel_prompt: "你是..."        # 可选，人格 prompt
 ```
 
 两种方式可以共存，`config.yaml` 中的值优先级更高。
